@@ -68,16 +68,27 @@ series$ind_change[is.na(series$ind_change)] = 0
 series = series[order(series$Product.Type,series$Date),]
 
 
-
+# Plot the series for all product groups
 qplot(series$Date,series$Price, color = series$Product.Type, xlab = "Date", ylab = "Price", geom = c("point","line"))
 
 
-### TS model
+## TS Visualization
 series_sub = series[series$Product.Type == "WMP",]
 
 tsData = ts(series_sub$Price, start = c(2009,11,3), frequency = 26)
 components.ts = decompose(tsData)
 plot(components.ts)
+
+## Vector Series
+
+testfit = VAR(series[series$Product.Type == 'AMF',c(2,3,6,7)],p=2,type = 'both') # shown to Zhaoran
+#summary(testfit)
+
+#vecotrized
+series_vec
+
+
+
 
 # making stationary
 series_sub$diff = 0
