@@ -4,8 +4,9 @@ library("zoo")
 library("vars")
 library("astsa")
 library("xts")
+library("reshape2")
 
-### Processing of GDT Historic Data
+### Processing of GDT Historic Product Data
 # Loading
 hist <- read.csv("./data/HistoricalProductData.csv")
 hist$Date <- as.Date(as.character(hist$Date.of.Event),format = "%d-%b-%y")
@@ -29,7 +30,9 @@ for (prd in products){
   }
 }
 
-### Processing of recent auctions data
+hist = hist[hist$Date < as.Date('2014-01-07'),]
+
+### Processing of Recent Auction Product Data
 recent <- read.csv("./data/joineddata.csv")
 recent <- recent[,c(-1,-6,-7,-11,-16,-17)]
 names(recent)[1] <- "Price"
@@ -43,12 +46,28 @@ recent = recent[recent$Product.Type %in% products,]
 recent$Product.Type = as.factor(recent$Product.Type)
 recent$Price[is.na(recent$Price)] = recent$AveragePublishedPrice.1[is.na(recent$Price)]
 
+
 ## Generation of series data
 recent_series = recent[,c(4,1,2,16,20)]
 series = rbind(recent_series,hist)
 series = series[order(series$Product.Type,series$Date),]
 series$PriceIndexPercentageChange[2:length(series$PriceIndexPercentageChange)] = 
   (series$Price[2:length(series$Price)] - series$Price[1:length(series$Price)-1])/series$Price[1:length(series$Price)-1]
+
+
+
+# Converting to wide format
+
+
+
+# importing historical event summary
+hist_event <- read.csv("./data/HistoricEventSummary.csv")
+hist_event$Date <- as.Date(as.character(hist_event$Date),format = "%d-%b-%y")
+hist_event$Duration <- as.character(hist_event$Duration)
+hist_event$Duration <-  as.integer(substr(hist_event$Duration,1,regexpr(':',hist_event$Duration)[1]-1)) * 60 + 
+                    as.integer(substr(hist_event$Duration,regexpr(':',hist_event$Duration)[1]+1,10)) 
+
+
 
 # Adding World Price Indices
 index = read.csv("./data/price_indeces.csv")
