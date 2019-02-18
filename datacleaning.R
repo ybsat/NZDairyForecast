@@ -57,8 +57,19 @@ series$PriceIndexPercentageChange[2:length(series$PriceIndexPercentageChange)] =
 
 
 # Converting to wide format
+series = series[order(series$Date),]
+eventdates = unique(series$Date)
 
+wide = data.frame("Date" = eventdates)
+for (prd in products) {
+  sub = series[series$Product.Type == prd,c(5,2,4)]
+  names(sub)[2] <- paste(as.character(prd),"_Price",sep='')
+  names(sub)[3] = paste(as.character(prd),"_QtySold",sep='')
+  wide = left_join(wide,sub)
+} 
 
+wide = wide[order(wide$Date),]
+wide = wide[wide$Date >= as.Date("2010-03-02"),]
 
 # importing historical event summary
 hist_event <- read.csv("./data/HistoricEventSummary.csv")
@@ -66,7 +77,22 @@ hist_event$Date <- as.Date(as.character(hist_event$Date),format = "%d-%b-%y")
 hist_event$Duration <- as.character(hist_event$Duration)
 hist_event$Duration <-  as.integer(substr(hist_event$Duration,1,regexpr(':',hist_event$Duration)[1]-1)) * 60 + 
                     as.integer(substr(hist_event$Duration,regexpr(':',hist_event$Duration)[1]+1,10)) 
+hist_event = hist_event[hist_event$Date < as.Date('2014-01-07'),]
 
+# processing recent event summary
+recent_event = read.csv("./data/events.csv")
+recent_event$Date = as.Date(recent_event$EventDate,format = "%m/%d/%y")
+recent_event = recent_event[,c(17,12,11,16,14,5)]
+names(recent_event) <- names(hist_event)
+recent_event$Duration = as.character(recent_event$Duration)
+recent_event$Duration <-  as.integer(substr(recent_event$Duration,1,regexpr(':',recent_event$Duration)[1]-1)) * 60 + 
+  as.integer(substr(recent_event$Duration,regexpr(':',recent_event$Duration)[1]+1,10)) 
+
+# combining event summaries and joinining to wide data
+events = rbind(hist_event,recent_event)
+events = events[order(events$Date),]
+
+wide = left_join(wide, events)
 
 
 # Adding World Price Indices
@@ -76,16 +102,21 @@ index$Date = as.yearmon(index$Date,"%b %y")
 index$ind_change = 0
 index$ind_change[2:length(index$Date)] = (index$World.Price..US...and.SDRs[2:length(index$Date)] - 
     index$World.Price..US...and.SDRs[1:length(index$Date)-1]) / (index$World.Price..US...and.SDRs[1:length(index$Date)-1])
-series$yearmon = as.yearmon(series$Date)
 
-series = left_join(series,index, by = c("yearmon" = "Date"))
-series = series[,-c(6)]
-series = series[order(series$Date),]
-lastindex = series$World.Price..US...and.SDRs[min(which(is.na(series$World.Price..US...and.SDRs))) - 1]
-series$World.Price..US...and.SDRs[is.na(series$World.Price..US...and.SDRs)] = lastindex
-series$ind_change[is.na(series$ind_change)] = 0
-series = series[order(series$Product.Type,series$Date),]
+wide$yearmon = as.yearmon(wide$Date)
 
+
+wide = left_join(wide,index, by = c("yearmon" = "Date"))
+wide = wide[,-c(17)]
+
+
+lastindex = wide$World.Price..US...and.SDRs[min(which(is.na(wide$World.Price..US...and.SDRs))) - 1]
+wide$World.Price..US...and.SDRs[is.na(wide$World.Price..US...and.SDRs)] = lastindex
+wide$ind_change[is.na(wide$ind_change)] = 0
+
+wide = wide[,c(-18)]
+
+write.csv(wide,"./data/fullseries.csv")
 
 # Plot the series for all product groups
 qplot(series$Date,series$Price, color = series$Product.Type, xlab = "Date", ylab = "Price", geom = c("point","line"))
