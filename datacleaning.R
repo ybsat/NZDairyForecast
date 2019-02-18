@@ -7,7 +7,7 @@ library("xts")
 
 ### Processing of GDT Historic Data
 # Loading
-hist <- read.csv("./data/HistoricalData.csv")
+hist <- read.csv("./data/HistoricalProductData.csv")
 hist$Date <- as.Date(as.character(hist$Date.of.Event),format = "%d-%b-%y")
 hist <- hist[,c(1,3,4,11,12)]
 hist <- hist[order(hist$Product.Type,hist$Date),]
@@ -52,18 +52,18 @@ series$PriceIndexPercentageChange[2:length(series$PriceIndexPercentageChange)] =
 
 # Adding World Price Indices
 index = read.csv("./data/price_indeces.csv")
-index = index[,c(-2)]
+index = index[,c(-3)]
 index$Date = as.yearmon(index$Date,"%b %y")
 index$ind_change = 0
-index$ind_change[2:length(index$Date)] = (index$New.Zealand.dollar[2:length(index$Date)] - 
-    index$New.Zealand.dollar[1:length(index$Date)-1]) / (index$New.Zealand.dollar[1:length(index$Date)-1])
+index$ind_change[2:length(index$Date)] = (index$World.Price..US...and.SDRs[2:length(index$Date)] - 
+    index$World.Price..US...and.SDRs[1:length(index$Date)-1]) / (index$World.Price..US...and.SDRs[1:length(index$Date)-1])
 series$yearmon = as.yearmon(series$Date)
 
 series = left_join(series,index, by = c("yearmon" = "Date"))
 series = series[,-c(6)]
 series = series[order(series$Date),]
-lastindex = series$New.Zealand.dollar[min(which(is.na(series$New.Zealand.dollar))) - 1]
-series$New.Zealand.dollar[is.na(series$New.Zealand.dollar)] = lastindex
+lastindex = series$World.Price..US...and.SDRs[min(which(is.na(series$World.Price..US...and.SDRs))) - 1]
+series$World.Price..US...and.SDRs[is.na(series$World.Price..US...and.SDRs)] = lastindex
 series$ind_change[is.na(series$ind_change)] = 0
 series = series[order(series$Product.Type,series$Date),]
 
