@@ -7,7 +7,7 @@ library("xts")
 
 ### Processing of GDT Historic Data
 # Loading
-hist <- read.csv("/Users/wandi/Desktop/HistoricalProductData.csv")
+hist <- read.csv("../data/HistoricalProductData.csv")
 hist$Date <- as.Date(as.character(hist$Date.of.Event),format = "%d-%b-%y")
 hist <- hist[,c(1,3,4,11,12)]
 hist <- hist[order(hist$Product.Type,hist$Date),]
